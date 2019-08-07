@@ -3,7 +3,7 @@
 //kept here
 
 **The dependencies are :**
-Vue
-PrefixFree
-FontAwesome
-Synaptic
+* Vue
+* PrefixFree
+* FontAwesome
+* Synaptic
