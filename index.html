@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> Paddle </title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" type="text/css" href="index.css">
+	<link rel="stylesheet" type="text/css" href="PlugIns/FontAwesome/css/font-awesome.min.css">
+</head>
+<body>
+
+<main id="main">
+	<div id="main-sub">
+		<div id="settingsOp"
+			:class="isPaused && isBegun? 'visible' : ''"	>
+			<span class="fa fa-cog">
+		</div>
+	
+		<div id="arena">
+			
+			<span id="bot"
+				:style="{ 'left' : botPos+'px' }"
+			> <b></b> </span>
+			<b id="ball"
+				class="fa fa-futbol-o"
+				:style="{'left': ballX+'px', 'top': ballY+'px'}"
+			></b>
+			<span id="player"
+				:style="{'left' : playerPos+'px'}"
+			> <b></b> </span>
+			
+		</div>
+		<div id="stats">
+			<transition name="score" mode="out-in">
+			<span :key="botScore">{{ botScore }}</span>
+			</transition>
+			
+			<i class="fa"
+				:class="isPaused? 'fa-play' : 'fa-pause' "
+				@click="pausePlay()"
+			></i>
+	
+			
+			<transition name="score" mode="out-in">
+				<span :key="playerScore">{{ playerScore }}</span>
+			</transition>
+		</div>
+ 		<div id="controls">
+			<div id="bar-box">
+				<div class="fa fa-angle-left"
+					v-on:touchstart="t_start_back()"
+					v-on:touchend="t_end()"
+				></div>
+				<div class="fa fa-angle-right"
+					v-on:touchstart="t_start_front()"
+					v-on:touchend="t_end()"
+				></div>
+			</div>
+		</div>
+	</div>	
+</main>
+
+</body>
+<script type="text/javascript" src="PlugIns/PrefixFree/fullPrefixFree.js"></script>
+<script type="text/javascript" src="PlugIns/Vue/Vue.min.js"></script>
+
+<script type="text/javascript" src="PlugIns/Synaptic/synaptic.js"></script>
+
+<script type="text/javascript" src="index.js"></script>
+
+<script type="text/javascript" src="destination_trainer.js"></script>
+<script type="text/javascript" src="target_trainer.js"></script>
+<script type="text/javascript">
+console.log(Object.keys(window));
+</script>
+</html>
