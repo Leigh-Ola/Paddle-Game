@@ -95,11 +95,12 @@ state();
 
 
 var game = new Vue({
-	el: "#main-sub",
+	el: "#main",
 	data : {
 		botScore: 0, playerScore:0,
 		botPos: 50, playerPos: 50,
-		playerVx: 0, maxBotAccx: 4.4,
+		playerVx: 0, botAcc : 0.9,
+		maxBotAccx: 4.4,
 		botAccxReduction : 0.5,
 		playerAccx : 0, botAccx: 0,
 		ballX : 250, ballY : 100,
@@ -187,7 +188,9 @@ var game = new Vue({
 		
 		bot_predictDestination : function(){
 			var inp = [ normalize("x", this.ballX), normalize("y", this.ballY), normalize("vx", this.ballVx),  normalize("vy", this.ballVy) ];
-			this.predictedDestination = normalize("x", destination_bot.activate(inp), true);;
+			var pred = normalize("x", destination_bot.activate(inp), true);
+			pred *= this.botAcc;
+			this.predictedDestination = pred;
 		},
 		bot_aim : function(){
 			var inp = [normalize("startX", this.ballX+(this.ballSize/2)), normalize("startVx", this.ballVx), normalize("endX", this.predictDestination()) ];
@@ -210,6 +213,7 @@ var game = new Vue({
 			}
 			if(g.length >= 2 && (g[g.length-1] == g[g.length-2])){
 				this.maxBotAccx+=0.5;
+				this.botAcc += ((1 - this.botAcc)/3)
 			}
 			
 			
