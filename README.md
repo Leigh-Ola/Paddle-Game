@@ -3,4 +3,4 @@
 
 > Work In Progress
 
-# Hosted on firebsse. [Click here](http://www.paddlegame-b7d2b.web.app)
+Hosted on firebase. [Click here](http://www.paddlegame-b7d2b.web.app)
