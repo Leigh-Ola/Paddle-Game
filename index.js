@@ -1,3 +1,31 @@
+// Speeds are in arena pixels per second, before desktop visual scaling.
+var BOT_DIFFICULTY = {
+	minimumSpeed: 120,
+	maximumSpeed: 360,
+	initialBaselineSpeed: 264,
+	maximumBaselineSpeed: 324,
+	baselineIncreasePerPoint: 4,
+	leadAdjustmentPerPoint: 18,
+	minimumPredictionScale: 0.75,
+	maximumPredictionScale: 1
+};
+
+function calculateBotDifficulty(playerScore, botScore) {
+	var settings = BOT_DIFFICULTY;
+	var baselineSpeed = Math.min(settings.maximumBaselineSpeed,
+		settings.initialBaselineSpeed + playerScore * settings.baselineIncreasePerPoint);
+	var speed = Math.max(settings.minimumSpeed, Math.min(settings.maximumSpeed,
+		baselineSpeed + (playerScore - botScore) * settings.leadAdjustmentPerPoint));
+	var strength = (speed - settings.minimumSpeed) / (settings.maximumSpeed - settings.minimumSpeed);
+	return {
+		baselineSpeed: baselineSpeed,
+		speed: speed,
+		predictionScale: settings.minimumPredictionScale + strength *
+			(settings.maximumPredictionScale - settings.minimumPredictionScale)
+	};
+}
+
+var initialBotDifficulty = calculateBotDifficulty(0, 0);
 
 var render = function(v){
 	var isPaused = false;
@@ -105,9 +133,8 @@ var game = new Vue({
 	data : {
 		botScore: 0, playerScore:0,
 		botPos: 50, playerPos: 50,
-		playerVx: 0, botAcc : 0.9,
-		maxBotAccx: 4.4,
-		botAccxReduction : 0.5,
+		playerVx: 0, botAcc : initialBotDifficulty.predictionScale,
+		maxBotAccx: initialBotDifficulty.speed / 60,
 		playerDirection : 0, playerSpeed : 360, botAccx: 0,
 		ballX : 250, ballY : 100,
 		ballSize : 15,
@@ -121,7 +148,6 @@ var game = new Vue({
 		game : function(){},
 		renderings : 0, frameScale : 1,
 		
-		goals : [],
 		predictedDestination : 0
 	},
 	mounted : function(){
@@ -149,6 +175,13 @@ var game = new Vue({
  
 	},
 	methods : {
+		updateDifficulty : function(){
+			var difficulty = calculateBotDifficulty(this.playerScore, this.botScore);
+			// The existing physics stores velocities in 60 Hz frame units.
+			this.maxBotAccx = difficulty.speed / 60;
+			this.botAcc = difficulty.predictionScale;
+			this.botAccx = Math.max(-this.maxBotAccx, Math.min(this.maxBotAccx, this.botAccx));
+		},
 		pausePlay : function(){
 			if(this.isBegun){
 				this.isPaused = !this.isPaused;
@@ -196,26 +229,17 @@ var game = new Vue({
 		}
 	},
 	watch : {
-		playerScore: function(sc){
+		playerScore: function(){
+			this.updateDifficulty();
 			this.pausePlay();
 			this.ballY = (this.gameHei - (this.padHei+2+this.ballSize));
 			this.ballX = (this.playerPos+ ((this.padWid/2) - (this.ballSize/2) ));
 			this.ballVx = 0;
 			this.ballVy = 5;
-			this.goals.push(1); 
 			this.server = "player";
-			var g = this.goals, r = this.botAccxReduction;
-			if(sc%4 == 0){
-				this.botAccxReduction = (r<=0)? 0 : r-1 ;
-			}
-			if(g.length >= 2 && (g[g.length-1] == g[g.length-2])){
-				this.maxBotAccx+=0.5;
-				this.botAcc += ((1 - this.botAcc)/3)
-			}
-			
-			
 		},
 		botScore : function(){
+			this.updateDifficulty();
 			this.ballY = (this.padHei+1);
 			this.ballX = (this.botPos+ ((this.padWid/2) - (this.ballSize/2) ));
 			this.ballVx = 0;
@@ -223,11 +247,7 @@ var game = new Vue({
 			this.server = "bot";
 			this.predictedDestination = this.predictDestination();
  			this.bot_releaseBall();
- 			this.goals.push(0);
-			var g = this.goals;
-			if(g.length >= 2 && (g[g.length-1] == g[g.length-2])){
-			this.maxBotAccx = (this.maxBotAccx-0.5 < 2)? 2 : this.maxBotAccx-this.botAccxReduction ; 
-			}
+
 		},
 		renderings : function(){
 			if(this.ballVy>0 || this.isPaused){return;}
