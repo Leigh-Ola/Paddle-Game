@@ -11,14 +11,18 @@
 
 <main id="main">
 
-		<div class="control left"
-			v-on:touchstart="t_start_back()"
-			v-on:touchend="t_end()"
+		<div class="control left" style="touch-action: none" aria-label="Move left"
+			v-on:pointerdown.prevent="$event.currentTarget.setPointerCapture($event.pointerId); t_start_back()"
+			v-on:pointerup="t_end()"
+			v-on:pointercancel="t_end()"
+			v-on:lostpointercapture="t_end()"
 		>
 		</div>
-		<div class="control right"
-			v-on:touchstart="t_start_front()"
-			v-on:touchend="t_end()"
+		<div class="control right" style="touch-action: none" aria-label="Move right"
+			v-on:pointerdown.prevent="$event.currentTarget.setPointerCapture($event.pointerId); t_start_front()"
+			v-on:pointerup="t_end()"
+			v-on:pointercancel="t_end()"
+			v-on:lostpointercapture="t_end()"
 		>
 		</div>
 	
@@ -61,16 +65,21 @@
  		<!-- div id="controls">
 			<div id="bar-box">
 				<div class="fa fa-angle-left"
-					v-on:touchstart="t_start_back()"
-					v-on:touchend="t_end()"
+					v-on:pointerdown.prevent="$event.currentTarget.setPointerCapture($event.pointerId); t_start_back()"
+					v-on:pointerup="t_end()"
+			v-on:pointercancel="t_end()"
+			v-on:lostpointercapture="t_end()"
 				></div>
 				<div class="fa fa-angle-right"
-					v-on:touchstart="t_start_front()"
-					v-on:touchend="t_end()"
+					v-on:pointerdown.prevent="$event.currentTarget.setPointerCapture($event.pointerId); t_start_front()"
+					v-on:pointerup="t_end()"
+			v-on:pointercancel="t_end()"
+			v-on:lostpointercapture="t_end()"
 				></div>
 			</div>
 		</div -->
 	</div>	
+<p style="position:absolute;bottom:8px;left:0;width:100%;margin:0;text-align:center;color:#fff;font:12px sans-serif;pointer-events:none">Hold either side or use &larr; &rarr; to move. Space to pause.</p>
 </main>
 
 </body>
@@ -85,6 +94,37 @@
 <script type="text/javascript" src="destination_trainer.js"></script>
 <script type="text/javascript" src="target_trainer.js"></script>
 <script type="text/javascript">
-console.log(Object.keys(window));
+// Keep desktop controls consistent with the touch controls.
+var heldDirections = [];
+function updateKeyboardMovement() {
+    game.t_end();
+    var direction = heldDirections[heldDirections.length - 1];
+    if (direction === "ArrowLeft") game.t_start_back();
+    if (direction === "ArrowRight") game.t_start_front();
+}
+document.addEventListener("keydown", function(event) {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        if (event.repeat) return;
+        heldDirections.push(event.key);
+        updateKeyboardMovement();
+    } else if (event.code === "Space") {
+        event.preventDefault();
+        if (!event.repeat) {
+            game.pausePlay();
+            updateKeyboardMovement();
+        }
+    }
+});
+document.addEventListener("keyup", function(event) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    heldDirections = heldDirections.filter(function(key) { return key !== event.key; });
+    updateKeyboardMovement();
+});
+window.addEventListener("blur", function() {
+    heldDirections = [];
+    game.t_end();
+});
 </script>
 </html>
