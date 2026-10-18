@@ -2,6 +2,7 @@
 var render = function(v){
 	var isPaused = false;
 	var renderings = 0;
+	var lastTime = performance.now();
 	var data = v.$data;
 	
 function fixCollisions(){
@@ -56,17 +57,22 @@ function fixCollisions(){
 	}
 }
 		
-var state = function(){
-	
-	data.playerVx += data.playerAccx;
-	data.playerPos += data.playerVx;
+var state = function(now){
+	// Input remains independent of score resets; distance is stable across frame rates.
+	var elapsed = Math.min(Math.max((now - lastTime) / 1000, 0), 0.05);
+	lastTime = now;
+	data.frameScale = elapsed * 60;
+	var canMove = !data.isPaused || data.server === "player";
+	data.playerVx = canMove ? data.playerDirection * data.playerSpeed / 60 : 0;
+	var playerStep = data.playerVx * elapsed * 60;
+	data.playerPos += playerStep;
 
 	if(!isPaused){
-		data.ballX += data.ballVx;
-		data.ballY += data.ballVy;
+		data.ballX += data.ballVx * data.frameScale;
+		data.ballY += data.ballVy * data.frameScale;
 	}else if(data.server== "player"){
 		if(!((data.playerVx>0 && data.playerAtMaxRight) || (data.playerVx<0 && data.playerAtMaxLeft))){
-			data.ballX += data.playerVx;
+			data.ballX += playerStep;
 		}
 	}
 	if(data.server == "bot"){
@@ -77,7 +83,7 @@ var state = function(){
 	data.renderings = ++renderings;
 	requestAnimationFrame(state);
 }
-state();
+requestAnimationFrame(state);
 	
 	return {
 		pause : function(){
@@ -86,7 +92,7 @@ state();
 		play : function(){
 			isPaused = false;
 			if(!renderings){
-				state();
+				// The animation loop is already scheduled.
 			}
 		}
 	}
@@ -102,7 +108,7 @@ var game = new Vue({
 		playerVx: 0, botAcc : 0.9,
 		maxBotAccx: 4.4,
 		botAccxReduction : 0.5,
-		playerAccx : 0, botAccx: 0,
+		playerDirection : 0, playerSpeed : 360, botAccx: 0,
 		ballX : 250, ballY : 100,
 		ballSize : 15,
 		ballVx : 0, ballVy : 0,
@@ -113,7 +119,7 @@ var game = new Vue({
 		isPaused : true,
 		isBegun: false, server: "",
 		game : function(){},
-		renderings : 0,
+		renderings : 0, frameScale : 1,
 		
 		goals : [],
 		predictedDestination : 0
@@ -128,8 +134,19 @@ var game = new Vue({
 		this.ballY = this.predictedDestination = (el.clientHeight/2);
 
 		this.game= render(this);
-
-		console.log(JSON.stringify(this.$data)); 
+		var self = this;
+		window.addEventListener("resize", function() {
+			var width = el.clientWidth, height = el.clientHeight;
+			if (!width || !height) return;
+			self.playerPos *= width / self.gameWid;
+			self.botPos *= width / self.gameWid;
+			self.ballX *= width / self.gameWid;
+			self.ballY *= height / self.gameHei;
+			self.gameWid = width; self.gameHei = height;
+			self.playerPos = Math.max(0, Math.min(self.playerPos, width - self.padWid));
+			self.botPos = Math.max(0, Math.min(self.botPos, width - self.padWid));
+		});
+ 
 	},
 	methods : {
 		pausePlay : function(){
@@ -148,31 +165,11 @@ var game = new Vue({
 				this.game.play();
 			}
 		},
-		t_start_front : function(){
-			var pvx = this.playerVx;
-			if((this.server == "player" || (!this.isPaused)) && !this.playerAtMaxRight){
-				this.playerAccx += 0.3;
-			}
-//			this.playerVx+=5;
-//			this.playerAccx=0;
-			if(this.playerAtMaxRight){
-				this.playerVx = 0;
-			}
-		},
-		t_start_back : function(){;
-			var pvx = this.playerVx;
-			if((this.server == "player" || (!this.isPaused)) && !this.playerAtMaxLeft){
-				this.playerAccx -= 0.3;
-			}
-//			this.playerVx-=5;
-//			this.playerAccx=0;
-			if(this.playerAtMaxLeft){
-				this.playerVx = 0;
-			}
-		},
+		t_start_front : function(){ this.playerDirection = 1; },
+		t_start_back : function(){ this.playerDirection = -1; },
 		t_end : function(){
+			this.playerDirection = 0;
 			this.playerVx = 0;
-			this.playerAccx = 0;
 		},
 
 		predictDestination : function(){
@@ -223,7 +220,6 @@ var game = new Vue({
 			this.ballX = (this.botPos+ ((this.padWid/2) - (this.ballSize/2) ));
 			this.ballVx = 0;
 			this.ballVy = 0;
-			this.playerAccx = 0;
 			this.server = "bot";
 			this.predictedDestination = this.predictDestination();
  			this.bot_releaseBall();
@@ -245,14 +241,14 @@ var game = new Vue({
 				}
 				if(isClose){
 					botAccx = 0;
-				}else{ botAccx++; }
+				}else{ botAccx += this.frameScale; }
 			}else{
 				if(this.botAccx>0){
 					botAccx = 0;
 				}
 				if(isClose){
 					botAccx = 0;
-				}else{ botAccx--; }
+				}else{ botAccx -= this.frameScale; }
 			}
 
 
@@ -267,7 +263,7 @@ var game = new Vue({
 			var tempAccx = (botAccx>this.maxBotAccx)? this.maxBotAccx : botAccx ;
 			tempAccx = (tempAccx< (0-this.maxBotAccx))? (0-this.maxBotAccx) : tempAccx;
  			this.botAccx = tempAccx;
-			this.botPos+=this.botAccx;
+			this.botPos += this.botAccx * this.frameScale;
 			
 			if(this.botPos <0){
 				this.botPos=0;

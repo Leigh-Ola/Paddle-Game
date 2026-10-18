@@ -1,15 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 	<title> Paddle </title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta name="viewport" content="height=device-height, initial-scale=1.0" />
 	<link rel="stylesheet" type="text/css" href="index.css">
 	<link rel="stylesheet" type="text/css" href="./PlugIns/FontAwesome/css/font-awesome.min.css">
+<style>
+
+.desktop-intro { display:none; }
+#stats i { cursor:pointer; }
+@media (min-width:768px) {
+ .desktop-intro { display:block; position:fixed; top:24px; left:0; width:100%; margin:0; text-align:center; font:600 28px Arial,sans-serif; color:#fff; }
+ #main-sub { width:365px; height:450px; flex-flow:column nowrap; justify-content:flex-start; transform:scale(1.3); }
+ #settingsOp { display:none; }
+ #arena { flex:0 0 364px; width:348px; height:364px; }
+ #stats { flex:0 0 55px; margin:20px auto 0; }
+ #main > p { bottom:24px !important; font-size:15px !important; color:#bac7e8 !important; }
+ .control { cursor:pointer; }
+ .control::after { position:absolute; top:50%; color:#7180a8; font:40px Arial,sans-serif; pointer-events:none; }
+ .control.left::after { content:'←'; left:18%; }
+ .control.right::after { content:'→'; right:18%; }
+ .control:active::after { color:#fff; }
+}
+@media (min-width:768px) and (min-height:850px) { #main-sub { transform:scale(1.5); } }
+@media (min-width:768px) and (max-height:680px) { #main-sub { transform:scale(1.05); } .desktop-intro { top:12px; font-size:22px; } #main > p { bottom:10px !important; } }
+
+</style>
 </head>
 <body>
 
 <main id="main">
+<h1 class="desktop-intro">Paddle</h1>
 
 		<div class="control left" style="touch-action: none" aria-label="Move left"
 			v-on:pointerdown.prevent="$event.currentTarget.setPointerCapture($event.pointerId); t_start_back()"
